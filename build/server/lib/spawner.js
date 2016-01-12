@@ -63,6 +63,7 @@ module.exports.start = function(app, callback) {
       env[key] = environment[key];
     }
   }
+  console.log('start', app.name, env);
   foreverOptions = {
     fork: true,
     silent: true,

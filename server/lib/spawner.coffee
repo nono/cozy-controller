@@ -48,6 +48,8 @@ module.exports.start = (app, callback) ->
         for key in Object.keys(environment)
             env[key] = environment[key]
 
+    console.log 'start', app.name, env
+
     # Initialize forever options
     foreverOptions =
         fork:      true
