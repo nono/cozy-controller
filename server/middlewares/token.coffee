@@ -15,6 +15,7 @@ module.exports.init = (current_token) ->
 module.exports.check = (req, res, next) ->
     if process.env.NODE_ENV is "production" or process.env.NODE_ENV is "test"
         auth = req.headers['x-auth-token']
+        console.log "check token:", auth, token
         if auth isnt "undefined" and auth?
             if auth isnt token
                 res.status(401).send "Token is not correct"

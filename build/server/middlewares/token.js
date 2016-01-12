@@ -24,6 +24,7 @@ module.exports.check = function(req, res, next) {
   var auth;
   if (process.env.NODE_ENV === "production" || process.env.NODE_ENV === "test") {
     auth = req.headers['x-auth-token'];
+    console.log("check token:", auth, token);
     if (auth !== "undefined" && (auth != null)) {
       if (auth !== token) {
         return res.status(401).send("Token is not correct");
