@@ -14,10 +14,10 @@ path = require('path');
  */
 
 module.exports.create = function(app, callback) {
-  var appdir, child, env, user;
+  var child, env, user;
   env = {};
   user = env.USER = app.user;
-  appdir = env.HOME = config('dir_app_bin');
+  env.HOME = app.dir;
   env.SHELL = process.env.SHELL;
   env.PATH = process.env.PATH;
   child = spawn('bash', [path.join(__dirname, '..', 'lib', 'adduser.sh')], {
