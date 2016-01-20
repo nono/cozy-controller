@@ -45,7 +45,7 @@ module.exports.create = function(app, callback) {
         if (err) {
           return callback(err);
         } else {
-          return changeOwner(app.user, dirPath, function(err) {
+          return module.exports.changeOwner(app.user, dirPath, function(err) {
             return callback(err);
           });
         }
