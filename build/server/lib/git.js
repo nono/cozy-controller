@@ -86,17 +86,19 @@ module.exports.init = function(app, callback) {
           commands = [];
           branch = app.repository.branch || "master";
           if ((gitVersion == null) || compareVersions("1.7.10", gitVersion[1]) === 1) {
-            commands = [['git', 'clone', url, '.']];
+            commands.push(['git', 'clone', url, app.name]);
+            commands.push(['cd', app.dir]);
             if (branch !== 'master') {
               commands.push(['git', 'branch', branch, "origin/" + branch]);
               commands.push(['git', 'checkout', branch]);
             }
           } else {
-            commands = [['git', 'clone', url, '--depth', '1', '-b', branch, '--single-branch', '.']];
+            commands.push(['git', 'clone', url, '--depth', '1', '-b', branch, '--single-branch', app.name]);
+            commands.push(['cd', app.dir]);
           }
           commands.push(['git', 'submodule', 'update', '--init', '--recursive']);
           config = {
-            cwd: app.dir,
+            cwd: conf('dir_app_bin'),
             user: app.user
           };
           return executeUntilEmpty(commands, config, function(err) {
