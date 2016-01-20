@@ -68,23 +68,21 @@ module.exports.init = (app, callback) ->
                     # available.
                     if not gitVersion? or \
                            compareVersions("1.7.10", gitVersion[1]) is 1
-                        commands = [
-                            ['git', 'clone', url, '.']
-                        ]
+                        commands.push ['git', 'clone', url, app.name]
+                        commands.push ['cd', app.dir]
                         if branch isnt 'master'
                             commands.push ['git', 'branch', branch, "origin/#{branch}"]
                             commands.push ['git', 'checkout', branch]
 
                     else
-                        commands = [
-                            ['git', 'clone', url, '--depth', '1',
-                             '-b', branch, '--single-branch', '.']
-                        ]
+                        commands.push ['git', 'clone', url, '--depth', '1',
+                                       '-b', branch, '--single-branch', app.name]
+                        commands.push ['cd', app.dir]
 
                     commands.push ['git', 'submodule', 'update', '--init', '--recursive']
 
                     config =
-                        cwd: app.dir
+                        cwd: conf('dir_app_bin')
                         user: app.user
                     executeUntilEmpty commands, config, (err) ->
                         if err?
