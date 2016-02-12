@@ -51,7 +51,7 @@ prepareEnv = (app) ->
 
 # Prepare the options for forever-monitor and the arguments for
 # cozy-controller-carapace
-prepareForeverOptions = (app) ->
+prepareForeverOptions = (app, env) ->
     foreverOptions =
         fork:      true
         silent:    true
@@ -99,7 +99,7 @@ findStartScript = (app, callback) ->
         catch
             return callback new Error "Package.json isn't in a correct format."
 
-        isCoffee = path.extname(app.server) is '.coffee'
+        isCoffee = false
         args = []
 
         if data.scripts?.start?
@@ -109,6 +109,9 @@ findStartScript = (app, callback) ->
             if start[0] is 'coffee'
                 isCoffee = true
             args = start[2..]
+
+        unless start
+            isCoffee = path.extname(app.server) is '.coffee'
 
         # Check if startScript exists
         fs.stat app.startScript, (err, stats) ->
@@ -152,13 +155,25 @@ setupSyslog = (app, foreverOptions) ->
     host = process.env.SYSLOG_HOST or 'localhost'
     port = process.env.SYSLOG_PORT or 514
     logger = new Syslogger hostname: host, port: port
-    sendLog = (data) -> logger.log data
+    sendLog = (data) ->
+        data = data.toString()
+        severity = switch data[0..5]
+            when 'error:' then 'err'
+            when 'warn: ' then 'warn'
+            when 'info: ' then 'info'
+            when 'debug:' then 'debug'
+            else 'notice'
+        logger.send data, severity
     start = (monitor) ->
-        monitor.child.stdout.on 'data', sendLog
-        monitor.child.stderr.on 'data', sendLog
+        logger.setMessageComposer (message, severity) ->
+            return new Buffer('<' + (this.facility * 8 + severity) + '>' +
+                this.getDate() + ' ' + app.name + '[' + monitor.pid + ']:' +
+                message)
+        monitor.on 'stdout', sendLog
+        monitor.on 'stderr', sendLog
     close = (monitor) ->
-        monitor.child.stdout.removeListener 'data', sendLog
-        monitor.child.stderr.removeListener 'data', sendLog
+        monitor.removeListener 'stdout', sendLog
+        monitor.removeListener 'stderr', sendLog
     return {start, close}
 
 
@@ -176,7 +191,7 @@ setupLogging = (app, foreverOptions) ->
 ###
 module.exports.start = (app, callback) ->
     result = {}
-    env = prepareEnv app
+    env = prepareEnv app, env
     foreverOptions = prepareForeverOptions app
     logging = setupLogging app, foreverOptions
 
@@ -188,7 +203,7 @@ module.exports.start = (app, callback) ->
                 foreverOptions.args =
                     foreverOptions.args.concat(['--plugin', 'coffee'])
             foreverOptions.args.push app.startScript
-            foreverOptions.args = foreverOptions.args.concart foreverArgs
+            foreverOptions.args = foreverOptions.args.concat foreverArgs
             carapaceBin = path.join(
                 require.resolve('cozy-controller-carapace'),
                 '..', '..', 'bin', 'carapace')
@@ -257,5 +272,4 @@ module.exports.start = (app, callback) ->
             monitor.once 'start', onStart
             monitor.on 'restart', onRestart
             monitor.on 'message', onPort
-            monitor.on 'stderr', onStderr
             timeout = setTimeout onTimeout, 8000000
