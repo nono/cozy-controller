@@ -58,7 +58,7 @@ prepareEnv = function(app) {
   return env;
 };
 
-prepareForeverOptions = function(app) {
+prepareForeverOptions = function(app, env) {
   var foreverOptions;
   foreverOptions = {
     fork: true,
@@ -87,7 +87,7 @@ findStartScript = function(app, callback) {
     } catch (error) {
       return callback(new Error("Package.json isn't in a correct format."));
     }
-    isCoffee = path.extname(app.server) === '.coffee';
+    isCoffee = false;
     args = [];
     if (((ref = data.scripts) != null ? ref.start : void 0) != null) {
       start = data.scripts.start.split(' ');
@@ -96,6 +96,9 @@ findStartScript = function(app, callback) {
         isCoffee = true;
       }
       args = start.slice(2);
+    }
+    if (!start) {
+      isCoffee = path.extname(app.server) === '.coffee';
     }
     return fs.stat(app.startScript, function(err, stats) {
       return callback(err, isCoffee, args);
@@ -153,15 +156,34 @@ setupSyslog = function(app, foreverOptions) {
     port: port
   });
   sendLog = function(data) {
-    return logger.log(data);
+    var severity;
+    data = data.toString();
+    severity = (function() {
+      switch (data.slice(0, 6)) {
+        case 'error:':
+          return 'err';
+        case 'warn: ':
+          return 'warn';
+        case 'info: ':
+          return 'info';
+        case 'debug:':
+          return 'debug';
+        default:
+          return 'notice';
+      }
+    })();
+    return logger.send(data, severity);
   };
   start = function(monitor) {
-    monitor.child.stdout.on('data', sendLog);
-    return monitor.child.stderr.on('data', sendLog);
+    logger.setMessageComposer(function(message, severity) {
+      return new Buffer('<' + (this.facility * 8 + severity) + '>' + this.getDate() + ' ' + app.name + '[' + monitor.pid + ']:' + message);
+    });
+    monitor.on('stdout', sendLog);
+    return monitor.on('stderr', sendLog);
   };
   close = function(monitor) {
-    monitor.child.stdout.removeListener('data', sendLog);
-    return monitor.child.stderr.removeListener('data', sendLog);
+    monitor.removeListener('stdout', sendLog);
+    return monitor.removeListener('stderr', sendLog);
   };
   return {
     start: start,
@@ -185,7 +207,7 @@ setupLogging = function(app, foreverOptions) {
 module.exports.start = function(app, callback) {
   var env, foreverOptions, logging, result;
   result = {};
-  env = prepareEnv(app);
+  env = prepareEnv(app, env);
   foreverOptions = prepareForeverOptions(app);
   logging = setupLogging(app, foreverOptions);
   return findStartScript(app, function(err, isCoffee, foreverArgs) {
@@ -197,7 +219,7 @@ module.exports.start = function(app, callback) {
         foreverOptions.args = foreverOptions.args.concat(['--plugin', 'coffee']);
       }
       foreverOptions.args.push(app.startScript);
-      foreverOptions.args = foreverOptions.args.concart(foreverArgs);
+      foreverOptions.args = foreverOptions.args.concat(foreverArgs);
       carapaceBin = path.join(require.resolve('cozy-controller-carapace'), '..', '..', 'bin', 'carapace');
       monitor = new forever.Monitor(carapaceBin, foreverOptions);
       responded = false;
@@ -264,7 +286,6 @@ module.exports.start = function(app, callback) {
       monitor.once('start', onStart);
       monitor.on('restart', onRestart);
       monitor.on('message', onPort);
-      monitor.on('stderr', onStderr);
       return timeout = setTimeout(onTimeout, 8000000);
     }
   });
