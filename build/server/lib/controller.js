@@ -19,6 +19,7 @@ stack = require('./stack');
 config = require('./conf').get;
 
 log = require('printit')({
+  date: true,
   prefix: 'lib:controller'
 });
 
@@ -121,10 +122,6 @@ stopApp = function(name, callback) {
   monitor.once('stop', onStop);
   monitor.once('exit', onStop);
   monitor.once('error', onErr);
-  try {
-    fs.closeSync(running[name].fd[0]);
-    fs.closeSync(running[name].fd[1]);
-  } catch (undefined) {}
   try {
     delete running[name];
     return monitor.stop();
