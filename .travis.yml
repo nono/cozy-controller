@@ -11,6 +11,7 @@ matrix:
 env:
     global:
         - NODE_ENV=test
+        - DEBUG=true
 services:
     - couchdb
 
