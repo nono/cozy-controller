@@ -158,25 +158,27 @@ setupSyslog = function(app, foreverOptions) {
   sendLog = function(data) {
     var severity;
     data = data.toString();
-    severity = (function() {
-      switch (data.slice(0, 6)) {
-        case 'error:':
-          return 'err';
-        case 'warn: ':
-          return 'warn';
-        case 'info: ':
-          return 'info';
-        case 'debug:':
-          return 'debug';
-        default:
-          return 'notice';
-      }
-    })();
-    return logger.send(data, severity);
+    if (data !== ' ' && data !== '\n') {
+      severity = (function() {
+        switch (data.slice(0, 6)) {
+          case 'error:':
+            return 'err';
+          case 'warn: ':
+            return 'warn';
+          case 'info: ':
+            return 'info';
+          case 'debug:':
+            return 'debug';
+          default:
+            return 'notice';
+        }
+      })();
+      return logger.send(data, severity);
+    }
   };
   start = function(monitor) {
     logger.setMessageComposer(function(message, severity) {
-      return new Buffer('<' + (this.facility * 8 + severity) + '>' + this.getDate() + ' ' + app.name + '[' + monitor.pid + ']:' + message);
+      return new Buffer('<' + (this.facility * 8 + severity) + '>' + this.getDate() + ' ' + app.name + '[' + monitor.childData.pid + ']:' + message);
     });
     monitor.on('stdout', sendLog);
     return monitor.on('stderr', sendLog);
