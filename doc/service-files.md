@@ -7,6 +7,17 @@ having to know the underlying storage layer.
 
 
 
+TODO
+----
+
+* compression (gzip, deflate, brotli)
+* CORS
+* checksum
+* explain how to move/copy files from one bucket to another
+* changes feed
+
+
+
 Buckets
 -------
 
@@ -216,7 +227,7 @@ Parameter  | Description
 -----------|------------
 type       | `folder`
 id         | _UUID_
-rev        | revision from CouchDB
+rev        | revision from CouchDB (_string_)
 name       | the name of the folder (_string_)
 created_at | the date of the creation (_date_)
 updated_at | the last metadata update (_date_)
@@ -284,7 +295,7 @@ Parameter  | Description
 -----------|------------
 type       | `file`
 id         | _UUID_
-rev        | revision from CouchDB
+rev        | revision from CouchDB (_string_)
 name       | the name of the file (_string_)
 size       | the size on disk (_integer_)
 created_at | the date of the creation (_date_)
